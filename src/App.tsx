@@ -1,6 +1,8 @@
-import { TrendingUp, ShieldCheck, Activity, BarChart3, Database, ChevronRight, CheckCircle2, RotateCcw } from 'lucide-react';
+import { TrendingUp, ShieldCheck, Activity, BarChart3, Database, ChevronRight, CheckCircle2, RotateCcw, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import * as htmlToImage from 'html-to-image';
+import jsPDF from 'jspdf';
 import { analyzeTables } from './lib/geminiService';
 import { AnalysisResult, SystemStatus } from './types';
 
@@ -11,6 +13,8 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(1);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   // --- Initial Step ---
   const handleStart = (count: number) => {
@@ -51,6 +55,47 @@ export default function App() {
     setTablesReceived([]);
     setCurrentIndex(1);
     setAnalysisResult(null);
+  };
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return;
+    setExporting(true);
+    
+    try {
+      const element = reportRef.current;
+      
+      // html-to-image is much better with modern CSS colors (oklab/oklch)
+      const dataUrl = await htmlToImage.toPng(element, {
+        backgroundColor: '#0a0a0b',
+        quality: 1.0,
+        pixelRatio: 2,
+        filter: (node) => {
+          // Ignore buttons and action elements
+          if (node instanceof HTMLElement && node.dataset.html2canvasIgnore === 'true') {
+            return false;
+          }
+          return true;
+        }
+      });
+      
+      const img = new Image();
+      img.src = dataUrl;
+      
+      img.onload = () => {
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [img.width, img.height]
+        });
+        
+        pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
+        pdf.save(`Relatorio_RTF_SCA_${new Date().toISOString().split('T')[0]}.pdf`);
+        setExporting(false);
+      };
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err);
+      setExporting(false);
+    }
   };
 
   return (
@@ -229,19 +274,34 @@ export default function App() {
                 key="analysed"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-16 pb-24"
+                ref={reportRef}
+                className="space-y-16 pb-24 px-4 bg-bg-deep"
               >
-                <div className="flex items-center justify-between border-b border-border-dim pb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-border-dim pb-8 gap-4 no-print">
                   <div>
                     <h2 className="text-4xl font-serif italic text-accent-gold tracking-tight">Dashboard de Resultados</h2>
                     <p className="text-text-dim font-mono text-xs mt-2 uppercase tracking-[0.3em]">Análise Consolidada RTF-SCA</p>
                   </div>
-                  <button 
-                    onClick={handleReset}
-                    className="flex items-center gap-2 px-6 py-2 bg-bg-surface border border-border-dim rounded text-[10px] uppercase font-bold tracking-widest text-text-dim hover:text-white hover:border-accent-gold/40 transition-all shadow-lg"
-                  >
-                    <RotateCcw className="w-4 h-4" /> Reiniciar Sistema
-                  </button>
+                  <div className="flex items-center gap-3" data-html2canvas-ignore="true">
+                    <button 
+                      onClick={handleExportPDF}
+                      disabled={exporting}
+                      className="flex items-center gap-2 px-6 py-2 bg-accent-gold text-black rounded text-[10px] uppercase font-bold tracking-widest hover:bg-[#b08e4d] transition-all shadow-lg disabled:opacity-50"
+                    >
+                      {exporting ? (
+                        <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <FileDown className="w-4 h-4" />
+                      )}
+                      Exportar PDF
+                    </button>
+                    <button 
+                      onClick={handleReset}
+                      className="flex items-center gap-2 px-6 py-2 bg-bg-surface border border-border-dim rounded text-[10px] uppercase font-bold tracking-widest text-text-dim hover:text-white hover:border-accent-gold/40 transition-all shadow-lg"
+                    >
+                      <RotateCcw className="w-4 h-4" /> Reiniciar
+                    </button>
+                  </div>
                 </div>
 
                 {/* Section 1: CALLS */}
@@ -352,8 +412,8 @@ function DataTable({ data, type }: { data: any[], type: 'option' | 'strangle' })
             <tr key={i} className="hover:bg-bg-deep/50 transition-colors font-mono">
               <td className="p-4">
                 <span className={`text-xs font-black uppercase tracking-widest ${
-                   item.risk.toLowerCase().includes('baixo') || item.risk.toLowerCase().includes('verde') || item.risk === 'Low' ? 'text-accent-green' :
-                   item.risk.toLowerCase().includes('médio') || item.risk.toLowerCase().includes('amarelo') || item.risk === 'Medium' ? 'text-accent-gold' : 'text-red-500'
+                   item.risk.toLowerCase().includes('baixo') || item.risk.toLowerCase().includes('verde') || item.risk.toLowerCase().includes('conservador') || item.risk === 'Low' ? 'text-accent-green' :
+                   item.risk.toLowerCase().includes('médio') || item.risk.toLowerCase().includes('amarelo') || item.risk.toLowerCase().includes('moderado') || item.risk === 'Medium' ? 'text-accent-gold' : 'text-red-500'
                 }`}>
                   {item.risk
                     .replace(/[🟢🟡🔴]/g, '')
@@ -378,7 +438,7 @@ function DataTable({ data, type }: { data: any[], type: 'option' | 'strangle' })
               </td>
               {type === 'option' && (
                 <td className="p-4 text-text-dim">
-                   {(item.exerciseProbability * 1).toFixed(1)}%
+                   {(item.exerciseProbability * 100).toFixed(1)}%
                 </td>
               )}
             </tr>

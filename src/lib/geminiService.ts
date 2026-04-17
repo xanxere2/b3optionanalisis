@@ -15,7 +15,10 @@ export async function analyzeTables(tables: string[]): Promise<AnalysisResult> {
     4. Prêmio Mínimo: >= 2% do strike. Calcular e exibir coluna "Prêmio Min (2%)".
     5. Classificar risco: Baixo, Médio, Agressivo.
     6. Tabelas obrigatórias: VENDA DE CALL, VENDA DE PUT, STRANGLE.
-    7. Análise de gregas e conclusão.
+    7. Probabilidade ITM: Calcule a probabilidade de exercício (In-The-Money) para cada opção. Retorne como um valor decimal entre 0 e 1 (ex: 0.45 para 45%).
+    8. Análise de gregas e conclusão.
+
+    IMPORTANTE: Seja estritamente determinístico. Sempre selecione as mesmas opções se os dados de entrada forem idênticos. Priorize opções com maior liquidez e prêmio dentro do range de 2%. Analise TODAS as opções relevantes encontradas nos dados.
 
     DADOS DAS TABELAS RECEBIDAS:
     ${tables.map((t, i) => `TABELA ${i + 1}:\n${t}`).join('\n\n')}
@@ -118,7 +121,8 @@ export async function analyzeTables(tables: string[]): Promise<AnalysisResult> {
           }
         },
         required: ["calls", "puts", "strangle", "payoff", "greeks", "conclusion"]
-      }
+      },
+      temperature: 0,
     }
   });
 
