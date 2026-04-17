@@ -1,0 +1,6 @@
+{
+  "name": "RTF-SCA Options AI",
+  "description": "Specialized options analysis agent based on the RTF-SCA model for Brazilian market yield and risk control.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["AI Analysis", "Financial Modeling"]
+}
