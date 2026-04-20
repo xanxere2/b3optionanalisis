@@ -1,0 +1,37 @@
+{
+  "entities": {
+    "Report": {
+      "title": "Report",
+      "description": "Uma análise de opções exportada pelo usuário.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID do usuário proprietário do relatório." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Momento da criação do relatório." },
+        "assetSymbol": { "type": "string", "description": "Símbolo do ativo analisado." },
+        "description": { "type": "string", "description": "Descrição curta do relatório." },
+        "data": { "type": "object", "description": "Dados completos da análise RTF-SCA em formato JSON." }
+      },
+      "required": ["userId", "timestamp", "assetSymbol", "data"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Perfil público do usuário.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Coleção de relatórios de análise de opções."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Perfis de usuários."
+    }
+  }
+}

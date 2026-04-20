@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Reports Security
+    match /reports/{reportId} {
+      function isValidReport(data) {
+        return data.keys().hasAll(['userId', 'timestamp', 'assetSymbol', 'data'])
+          && data.userId == request.auth.uid
+          && data.userId is string
+          && data.assetSymbol is string
+          && data.assetSymbol.size() <= 20
+          && data.timestamp is timestamp;
+      }
+
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() 
+        && isValidId(reportId)
+        && isValidReport(request.resource.data)
+        && request.resource.data.timestamp == request.time;
+        
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      // Reports are immutable for now, no update allowed
+      allow update: if false;
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.keys().hasAll(['email'])
+          && data.email is string
+          && data.email.size() <= 255;
+      }
+
+      allow get: if isSignedIn();
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+  }
+}
