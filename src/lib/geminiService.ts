@@ -16,11 +16,14 @@ export async function analyzeTables(tables: string[]): Promise<AnalysisResult> {
     5. Classificar risco: Baixo, Médio, Agressivo.
     6. Tabelas obrigatórias: VENDA DE CALL, VENDA DE PUT, STRANGLE.
     7. Probabilidade ITM: Calcule a probabilidade de exercício (In-The-Money) para cada opção. Retorne SEMPRE como um valor decimal entre 0 e 1 (ex: 0.45 para 45%).
-    8. Análise de gregas e conclusão.
+    8. Valor Esperado (EV): Calcule o EV para cada estratégia. 
+       - Para Opções (Calls/Puts): EV = Lucro Líquido * (1 - Probabilidade ITM).
+       - Para Strangle: EV = Lucro Líquido * Probabilidade de o preço stay between strikes.
+    9. Análise de gregas e conclusão.
 
     CRITÉRIOS DE SELEÇÃO RÍGIDOS:
     1. Extraia EXATAMENTE 3 opções de CALL e 3 opções de PUT que representem os perfis Baixo, Médio e Agressivo.
-    2. Ordenação: Liste CALLs por Strike Crescente e PUTs por Strike Decrescente.
+    2. Ordenação: Em TODAS as tabelas (CALL, PUT e STRANGLE), siga rigorosamente a ordem: Agressivo primeiro, depois Médio, e por fim Baixo.
     3. Seleção Determinística: Priorize ativos com Prêmio (BID) mais próximo do alvo de 2% do strike. Se houver empate, use o de maior liquidez/volume.
     4. Proibição de Hallucinação: Use apenas os dados fornecidos nas tabelas. Não invente símbolos ou prêmios.
     5. Repetitibilidade: Se a entrada for a mesma, a saída DEVE ser rigorosamente a mesma.
@@ -44,7 +47,11 @@ export async function analyzeTables(tables: string[]): Promise<AnalysisResult> {
             items: {
               type: Type.OBJECT,
               properties: {
-                risk: { type: Type.STRING },
+                risk: { 
+                  type: Type.STRING, 
+                  description: "Nível de risco: 'Baixo', 'Médio' ou 'Agressivo'",
+                  enum: ["Baixo", "Médio", "Agressivo"] 
+                },
                 symbol: { type: Type.STRING },
                 strike: { type: Type.NUMBER },
                 premium: { type: Type.NUMBER },
@@ -53,9 +60,10 @@ export async function analyzeTables(tables: string[]): Promise<AnalysisResult> {
                 cost: { type: Type.NUMBER },
                 netProfit: { type: Type.NUMBER },
                 returnPercent: { type: Type.NUMBER },
-                exerciseProbability: { type: Type.NUMBER }
+                exerciseProbability: { type: Type.NUMBER },
+                expectedValue: { type: Type.NUMBER }
               },
-              required: ["risk", "symbol", "strike", "premium", "minPremium2Percent", "grossRevenue", "cost", "netProfit", "returnPercent", "exerciseProbability"]
+              required: ["risk", "symbol", "strike", "premium", "minPremium2Percent", "grossRevenue", "cost", "netProfit", "returnPercent", "exerciseProbability", "expectedValue"]
             }
           },
           puts: {
@@ -63,7 +71,11 @@ export async function analyzeTables(tables: string[]): Promise<AnalysisResult> {
             items: {
               type: Type.OBJECT,
               properties: {
-                risk: { type: Type.STRING },
+                risk: { 
+                  type: Type.STRING, 
+                  description: "Nível de risco: 'Baixo', 'Médio' ou 'Agressivo'",
+                  enum: ["Baixo", "Médio", "Agressivo"] 
+                },
                 symbol: { type: Type.STRING },
                 strike: { type: Type.NUMBER },
                 premium: { type: Type.NUMBER },
@@ -72,9 +84,10 @@ export async function analyzeTables(tables: string[]): Promise<AnalysisResult> {
                 cost: { type: Type.NUMBER },
                 netProfit: { type: Type.NUMBER },
                 returnPercent: { type: Type.NUMBER },
-                exerciseProbability: { type: Type.NUMBER }
+                exerciseProbability: { type: Type.NUMBER },
+                expectedValue: { type: Type.NUMBER }
               },
-              required: ["risk", "symbol", "strike", "premium", "minPremium2Percent", "grossRevenue", "cost", "netProfit", "returnPercent", "exerciseProbability"]
+              required: ["risk", "symbol", "strike", "premium", "minPremium2Percent", "grossRevenue", "cost", "netProfit", "returnPercent", "exerciseProbability", "expectedValue"]
             }
           },
           strangle: {
@@ -82,14 +95,19 @@ export async function analyzeTables(tables: string[]): Promise<AnalysisResult> {
             items: {
               type: Type.OBJECT,
               properties: {
-                risk: { type: Type.STRING },
+                risk: { 
+                  type: Type.STRING, 
+                  description: "Nível de risco: 'Baixo', 'Médio' ou 'Agressivo'",
+                  enum: ["Baixo", "Médio", "Agressivo"] 
+                },
                 strategy: { type: Type.STRING },
                 grossRevenueTotal: { type: Type.NUMBER },
                 costTotal: { type: Type.NUMBER },
                 netProfit: { type: Type.NUMBER },
-                returnPercent: { type: Type.NUMBER }
+                returnPercent: { type: Type.NUMBER },
+                expectedValue: { type: Type.NUMBER }
               },
-              required: ["risk", "strategy", "grossRevenueTotal", "costTotal", "netProfit", "returnPercent"]
+              required: ["risk", "strategy", "grossRevenueTotal", "costTotal", "netProfit", "returnPercent", "expectedValue"]
             }
           },
           payoff: {

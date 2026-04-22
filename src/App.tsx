@@ -590,6 +590,7 @@ function DataTable({ data, type }: { data: any[], type: 'option' | 'strangle' })
             <th className="p-4 uppercase tracking-widest text-text-dim font-bold text-xs">{type === 'option' ? 'Prêmio (BID)' : 'Receita Total'}</th>
             {type === 'option' && <th className="p-4 uppercase tracking-widest text-text-dim font-bold text-xs">Min (2%)</th>}
             <th className="p-4 uppercase tracking-widest text-text-dim font-bold text-xs">{type === 'option' ? 'Liq. Estimado' : 'Lucro Líquido'}</th>
+            <th className="p-4 uppercase tracking-widest text-text-dim font-bold text-xs">EV</th>
             <th className="p-4 uppercase tracking-widest text-text-dim font-bold text-xs">Retorno</th>
             {type === 'option' && <th className="p-4 uppercase tracking-widest text-text-dim font-bold text-xs">Prob. ITM</th>}
           </tr>
@@ -617,6 +618,9 @@ function DataTable({ data, type }: { data: any[], type: 'option' | 'strangle' })
               {type === 'option' && <td className="p-4 text-text-dim/60 font-medium whitespace-nowrap">R$ {item.minPremium2Percent.toFixed(2)}</td>}
               <td className="p-4 text-text-main">
                 R$ {(type === 'option' ? item.netProfit : item.netProfit).toLocaleString()}
+              </td>
+              <td className="p-4 text-accent-gold font-bold">
+                R$ {item.expectedValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </td>
               <td className="p-4">
                 <span className="text-accent-green font-bold">

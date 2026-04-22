@@ -1,7 +1,7 @@
 export type SystemStatus = 'initial' | 'collecting' | 'complete' | 'analysed' | 'error';
 
 export interface OptionData {
-  risk: 'Low' | 'Medium' | 'High';
+  risk: 'Baixo' | 'Médio' | 'Agressivo';
   symbol: string;
   strike: number;
   premium: number;
@@ -11,15 +11,17 @@ export interface OptionData {
   netProfit: number;
   returnPercent: number;
   exerciseProbability: number;
+  expectedValue: number;
 }
 
 export interface StrangleData {
-  risk: 'Low' | 'Medium' | 'High';
+  risk: 'Baixo' | 'Médio' | 'Agressivo';
   strategy: string; // codes like "CALL + PUT"
   grossRevenueTotal: number;
   costTotal: number;
   netProfit: number;
   returnPercent: number;
+  expectedValue: number;
 }
 
 export interface AnalysisResult {
